@@ -60,12 +60,24 @@ class QuestionSpec:
     """If set, only process the first N unique MRNs (after dropna). None = all."""
 
 
-def run_question(data_merged: pd.DataFrame, llm: LLMClient, spec: QuestionSpec) -> pd.DataFrame:
+def run_question(
+    data_merged: pd.DataFrame,
+    llm: LLMClient,
+    spec: QuestionSpec,
+    merged_data_path: str | None = None,
+) -> pd.DataFrame:
     """
     For each MRN: combine notes, call LLM, compare to gold, log results, print metrics.
 
+    ``merged_data_path`` is written to the results CSV; defaults to ``MERGED_DATA_PATH``
+    from config when omitted.
+
     Returns a DataFrame with MRN, prediction column, and Gold_Standard.
     """
+    if merged_data_path is None:
+        from config import MERGED_DATA_PATH
+
+        merged_data_path = MERGED_DATA_PATH
     mrns = data_merged["MRN"].dropna().unique()
     if spec.max_mrns is not None:
         mrns = mrns[: spec.max_mrns]
@@ -122,6 +134,7 @@ def run_question(data_merged: pd.DataFrame, llm: LLMClient, spec: QuestionSpec) 
         gold_standards=gold_standards,
         mrns=mrns,
         llm=llm,
+        merged_data_path=merged_data_path,
     )
 
     metrics = evaluate_predictions(
@@ -190,4 +203,4 @@ if __name__ == "__main__":
         print(f"\n{'='*60}")
         print(f"Running: {spec.question_name}")
         print(f"{'='*60}")
-        run_question(data_merged, llm, spec)
+        run_question(data_merged, llm, spec, merged_data_path=MERGED_DATA_PATH)

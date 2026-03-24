@@ -235,7 +235,14 @@ def print_evaluation_summary(metrics, question_name):
 # --- Results -----------------------------------------------------------------
 
 
-def append_results_to_csv(question_name, predictions, gold_standards, mrns, llm: LLMClient):
+def append_results_to_csv(
+    question_name,
+    predictions,
+    gold_standards,
+    mrns,
+    llm: LLMClient,
+    merged_data_path: str,
+):
     """
     Append per-MRN results for a question to a single CSV file.
 
@@ -245,6 +252,7 @@ def append_results_to_csv(question_name, predictions, gold_standards, mrns, llm:
         gold_standards: list of gold values (len N, None if unavailable)
         mrns: list/array of MRNs (len N)
         llm: client used for this run (provider/model_id logged from it)
+        merged_data_path: path to the merged input CSV used for this run
     """
     run_ts = datetime.now(timezone.utc).isoformat()
 
@@ -260,6 +268,7 @@ def append_results_to_csv(question_name, predictions, gold_standards, mrns, llm:
                 "Has_Gold": has_gold,
                 "Provider": llm.provider,
                 "Model": llm.model_id,
+                "Merged_Data_Path": merged_data_path,
                 "Run_Timestamp": run_ts,
             }
         )
