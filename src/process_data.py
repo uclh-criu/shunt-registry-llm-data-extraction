@@ -3,7 +3,7 @@ Script to pre-process data ready for LLM extraction
 '''
 
 import pandas as pd
-from config import RESULTS_DATA_PATH, INPUT_DATA_PATH, EVAL_DATA_PATH, MERGED_DATA_PATH, CLERKING_DATA_PATH, DISCHARGE_DATA_PATH, OP_NOTE_DATA_PATH, MDT_DATA_PATH
+from config import INPUT_DATA_PATH, EVAL_DATA_PATH, MERGED_DATA_PATH
 
 def load_data():
     data = pd.read_csv(INPUT_DATA_PATH, encoding='latin-1')
@@ -40,19 +40,6 @@ def format_input_data(data):
     data = wide
 
     return data
-
-def split_data(data):
-    clerking = data[['MRN', 'Clerking']]
-    op_note = data[['MRN', 'Op Note']]
-    discharge_summary = data[['MRN', 'Discharge Summary']]
-    #imaging = data[['MRN', 'Imaging Report']]
-    mdt = data[['MRN', 'MDT Outcome']]
-
-    #Save to csv
-    clerking.to_csv(CLERKING_DATA_PATH, index=False)
-    op_note.to_csv(OP_NOTE_DATA_PATH, index=False)
-    discharge_summary.to_csv(DISCHARGE_DATA_PATH, index=False)
-    mdt.to_csv(MDT_DATA_PATH, index=False)
 
 def clean_eval_data(evaluation):
 # Clean evaluation column names: remove " | Shunt Operation" suffix
@@ -97,7 +84,6 @@ def merge_data(data, evaluation):
 if __name__ == "__main__":
     data, evaluation = load_data()
     data = format_input_data(data)
-    split_data(data)
     evaluation = clean_eval_data(evaluation)
     check_mrn_overlap(data, evaluation)
     merge_data(data, evaluation)
