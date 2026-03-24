@@ -48,4 +48,17 @@ config / env  →  LLMSettings  →  create_llm_client()  →  llm: LLMClient
                                                               ↓
 data + `run_question(..., llm, spec)`  →  `extract_with_llm` → `llm.generate_chat(...)`
 
-Main modules: `src/config.py` (paths, env), `src/process_data.py` (load / pivot / merge), `src/llm_client.py` (OpenAI or Hugging Face), `src/question_runner.py` (specs + CLI), `src/utils.py` (prompts, notes, metrics, CSV logging).
+Main modules:
+
+```
+.
+├── prompts/                 # templates named in each QuestionSpec (e.g. q1_prompt.txt)
+└── src/
+    ├── config.py            # loads .env → paths + LLM settings
+    ├── process_data.py      # stage 1: pivot + merge → merged CSV
+    ├── questions.py         # QUESTION_REGISTRY: which questions exist
+    ├── question_runner.py   # stage 2: loop, CLI, run_question
+    ├── llm_client.py        # LLMClient implementations
+    ├── registry_options.py  # option text fed into prompts
+    └── utils.py             # helpers used by question_runner
+```
