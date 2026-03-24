@@ -1,14 +1,28 @@
 # Shunt Registry Data Extraction using LLMs
 
-This repository provides functionality for extracting data from text to populate the national shunt registry database, using Large Language Models (LLMs)
+This repository provides functionality for extracting data from text to populate the UK Shunt Registry (UKSR) database using Large Language Models (LLMs). 
 
 ## Usage
 
-1. Collect dataset on patients via CogStack Catalogue (TODO: fill in exactly what to select and expected format)
-2. Collect some gold standard data to evaluate against if available (TODO: fill in where your gold standard came from)
-3. Configure paths and LLM (optional). Copy `.env.example` to `.env` and set `SHUNT_*` variables, or rely on defaults in `src/config.py`. See `OPENAI_API_KEY` in `.env` for OpenAI.
-4. Run process_data.py - this will pre-process the data, and create several new files (TODO: explain which)
-5. Run one or more questions via `question_runner.py`:
+Clone the repo, create a virtualenv, install dependencies, then work from the repository root (so paths like `data/...` resolve correctly):
+
+Example:
+```bash
+python -m venv venv
+source/venv/bin/activate
+pip install -r requirements.txt
+```
+
+Steps:
+1. **Source data:** Export patient notes from CogStack Catalogue: one row per note with and a 'MRN' patient identifier. Place the CSV under `data/` (or set `INPUT_DATA_PATH` in `.env`).
+
+2. **Gold / evaluation:** Provide a spreadsheet of registry fields to compare against, with `MRN` aligned to the notes export.
+
+3. **Config:** Copy `.env.example` to `.env`. Set `OPENAI_API_KEY` if using OpenAI. Adjust paths and `LLM_PROVIDER` / `MODEL_ID` as needed, or rely on defaults in `src/config.py`.
+
+4. **Pre-process:** Run `python src/process_data.py`. This pivots long-format notes to a **wide** table (one row per MRN, columns such as `Discharge Summary`, `Op Note`, `Clerking`), merges with the evaluation file on `MRN`, and writes the merged CSV (default `data/merged_data.csv` per `MERGED_DATA_PATH`).
+
+5. **Extract:** Run one or more questions via `question_runner.py`:
 
 ```bash
 # Run a single question
@@ -24,6 +38,8 @@ python src/question_runner.py all
 python src/question_runner.py q1 --max-mrns 50
 ```
 
+Predictions append to the results CSV (`RESULTS_DATA_PATH`, default `all_results.csv`), including provider, model, merged data path, and timestamp.
+
 To **add a new question**: add its options to `registry_options.py`, add a prompt file to `prompts/`, then add one `QuestionSpec` entry to `QUESTION_REGISTRY` in `questions.py`. No other files need to change.
 
 ## Architecture
@@ -31,3 +47,5 @@ To **add a new question**: add its options to `registry_options.py`, add a promp
 config / env  →  LLMSettings  →  create_llm_client()  →  llm: LLMClient
                                                               ↓
 data + `run_question(..., llm, spec)`  →  `extract_with_llm` → `llm.generate_chat(...)`
+
+Main modules: `src/config.py` (paths, env), `src/process_data.py` (load / pivot / merge), `src/llm_client.py` (OpenAI or Hugging Face), `src/question_runner.py` (specs + CLI), `src/utils.py` (prompts, notes, metrics, CSV logging).
