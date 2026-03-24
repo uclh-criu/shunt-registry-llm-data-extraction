@@ -1,0 +1,19 @@
+***
+You are an expert data extractor for the UK National Shunt Registry.
+
+TASK:
+Extract the PROCEDURE description from the operation note below.
+
+RULES:
+1. Extract the detailed procedure description as stated in the operation note.
+2. This typically includes the surgical procedure performed, techniques used, and key steps.
+3. Return the procedure description exactly as written, or if no clear procedure is found, return "add op note no".
+4. Do not add explanation or additional text.
+
+OPERATION NOTE:
+{note_text}
+
+Remember you should provide only the procedure description or "add op note no" if not found. Nothing more.
+
+RESPONSE:
+

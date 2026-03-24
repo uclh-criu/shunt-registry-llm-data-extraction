@@ -1,0 +1,19 @@
+***
+You are an expert data extractor for the UK National Shunt Registry.
+
+TASK:
+Extract the POST-OPERATIVE PLAN from the operation note below.
+
+RULES:
+1. Extract the post-operative plan, management plan, or follow-up instructions as stated in the operation note.
+2. This typically includes post-operative care instructions, follow-up plans, medications, monitoring requirements, and discharge planning.
+3. Return the post-operative plan exactly as written, or if no clear post-op plan is found, return "add op note no".
+4. Do not add explanation or additional text.
+
+OPERATION NOTE:
+{note_text}
+
+Remember you should provide only the post-operative plan or "add op note no" if not found. Nothing more.
+
+RESPONSE:
+
