@@ -3,7 +3,7 @@ Script to pre-process data ready for LLM extraction
 '''
 
 import pandas as pd
-from config import RESULTS_CSV_PATH, INPUT_DATA_PATH, EVAL_DATA_PATH, MERGED_DATA_PATH, CLERKING_DATA_PATH, DISCHARGE_DATA_PATH, OP_NOTE_DATA_PATH, MDT_DATA_PATH
+from config import RESULTS_DATA_PATH, INPUT_DATA_PATH, EVAL_DATA_PATH, MERGED_DATA_PATH, CLERKING_DATA_PATH, DISCHARGE_DATA_PATH, OP_NOTE_DATA_PATH, MDT_DATA_PATH
 
 def load_data():
     data = pd.read_csv(INPUT_DATA_PATH, encoding='latin-1')

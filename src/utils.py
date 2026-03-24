@@ -3,11 +3,11 @@ Utility & helper functions
 '''
 
 import os
-from dotenv import load_dotenv
 import pandas as pd
 from datetime import datetime
-from openai import OpenAI
-from config import provider, model_id, RESULTS_DATA_PATH
+
+from config import RESULTS_DATA_PATH
+from llm_client import LLMClient
 
 def load_prompt(prompt_file, options, note_text, max_length=4000):
     """Load a prompt template from file and fill in options and note text."""
@@ -19,65 +19,11 @@ def load_prompt(prompt_file, options, note_text, max_length=4000):
     
     return prompt_template.format(options=options, note_text=truncated_note)
 
-def load_llm():
-    # Initialize based on provider choice
-    if provider == 'openai':
-        load_dotenv()
-        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        hf_tokenizer = None
-        hf_model = None
-        device = None
-        print(f"Using OpenAI provider with model: {model_id}")
-        print(client)
-    elif provider == 'hf':
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #check if cuda-enabled GPU is available
-        print(f"Using device: {device}")
-        hf_tokenizer = AutoTokenizer.from_pretrained(model_id)
-        hf_model = AutoModelForCausalLM.from_pretrained(model_id)
-        hf_model = hf_model.to(device)
-        client = None
-        print(f"Using HuggingFace provider with model: {model_id}")
-    else:
-        raise ValueError(f"Unknown provider: {provider}. Must be 'openai' or 'hf'")
-    return client, hf_tokenizer, hf_model, device
-
-def extract_with_llm(prompt_file, options, note_text, client, hf_tokenizer, hf_model, device):
-    """Extract information using LLM with a prompt template."""
+def extract_with_llm(prompt_file, options, note_text, llm: LLMClient):
+    """Load prompt template and run chat completion via the given LLM client."""
     prompt_content = load_prompt(prompt_file, options, note_text)
-
-    messages = [
-        {"role": "user", "content": prompt_content}
-    ]
-    
-    if provider == 'openai':
-        response = client.chat.completions.create(
-            model=model_id,
-            messages=messages
-        )
-        return response.choices[0].message.content.strip()
-    
-    elif provider == 'hf':
-        text = hf_tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True
-        )
-        model_inputs = hf_tokenizer([text], return_tensors="pt").to(hf_model.device)
-        
-        generated_ids = hf_model.generate(
-            **model_inputs,
-            max_new_tokens=100,
-            temperature=0.0001,
-            do_sample=True
-        )
-        
-        input_length = model_inputs.input_ids.shape[1]
-        generated_tokens = generated_ids[0][input_length:]
-        response = hf_tokenizer.decode(generated_tokens, skip_special_tokens=True)
-        
-        return response.strip()
-    else:
-        raise ValueError(f"Unknown provider: {provider}")
+    messages = [{"role": "user", "content": prompt_content}]
+    return llm.generate_chat(messages)
 
 def combine_medical_texts(data, mrn, sources=('Discharge Summary', 'Op Note', 'Clerking')):
     """Combine text from specified sources for a given MRN."""
@@ -240,7 +186,7 @@ def print_evaluation_summary(metrics, question_name):
     
     print(f"{'='*60}\n")
 
-def append_results_to_csv(question_name, predictions, gold_standards, mrns, provider, model_id):
+def append_results_to_csv(question_name, predictions, gold_standards, mrns, llm: LLMClient):
     """
     Append per-MRN results for a question to a single CSV file.
 
@@ -249,8 +195,7 @@ def append_results_to_csv(question_name, predictions, gold_standards, mrns, prov
         predictions: list of model outputs (len N)
         gold_standards: list of gold values (len N, None if unavailable)
         mrns: list/array of MRNs (len N)
-        provider: str, e.g. "openai" or "hf"
-        model_id: str, e.g. "gpt-4.1-mini" or HF model name
+        llm: client used for this run (provider/model_id logged from it)
     """
     run_ts = datetime.utcnow().isoformat()
     
@@ -263,8 +208,8 @@ def append_results_to_csv(question_name, predictions, gold_standards, mrns, prov
             "Prediction": pred,
             "Gold_Standard": "" if gold is None else gold,
             "Has_Gold": has_gold,
-            "Provider": provider,
-            "Model": model_id,
+            "Provider": llm.provider,
+            "Model": llm.model_id,
             "Run_Timestamp": run_ts,
         })
     

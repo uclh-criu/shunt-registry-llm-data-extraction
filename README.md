@@ -11,3 +11,13 @@ This repository provides functionality for extracting data from text to populate
 - EVAL_DATA_PATH = this is the file path for your golden dataset
 4. Run process_data.py - this will pre-process the data, and create several new files (TODO: explain which)
 5. After this you can now run any of the question scripts e.g. q1.py
+
+## Architecture
+
+config / env  →  LLMSettings  →  create_llm_client()  →  llm: LLMClient
+                                                              ↓
+data + extract_q1(..., llm)  →  llm.generate_chat(...)
+
+**Step 1:** `src/llm_client.py` — `LLMSettings`, `OpenAIClient`, `HuggingFaceClient`, `create_llm_client(settings)`, `llm_settings_from_config()`, `create_llm_client_from_config()`.
+
+**Step 2:** `utils.extract_with_llm(..., llm)` and `append_results_to_csv(..., llm)` take an `LLMClient`. `load_llm()` was removed. `q1.py` builds the client once (`create_llm_client_from_config()`) and passes it to `extract_q1(data_merged, llm)`.
