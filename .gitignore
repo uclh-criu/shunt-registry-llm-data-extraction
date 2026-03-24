@@ -4,3 +4,4 @@ data/
 archive/
 .env
 venv
+*.ipynb
