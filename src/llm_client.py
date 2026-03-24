@@ -5,11 +5,8 @@ LLM abstraction: settings, provider-specific clients, and factory.
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
-
-from dotenv import load_dotenv
-from openai import OpenAI
 
 
 @dataclass(frozen=True)
@@ -44,7 +41,9 @@ class OpenAIClient:
         if settings.provider != "openai":
             raise ValueError("OpenAIClient requires settings.provider == 'openai'")
         self._settings = settings
-        load_dotenv()
+        # Lazy import so `hf` runs don't require the openai package
+        from openai import OpenAI
+
         self._client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         print(f"Using OpenAI provider with model: {settings.model_id}")
 

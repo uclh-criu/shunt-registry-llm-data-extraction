@@ -5,4 +5,4 @@ archive/
 .env
 venv
 *.ipynb
-__pycache__
+src/__pycache__
