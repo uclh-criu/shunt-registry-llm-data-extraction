@@ -45,7 +45,7 @@ To **add a new question**: add its options to `registry_options.py`, add a promp
 ## Architecture
 
 config / env  →  LLMSettings  →  create_llm_client()  →  llm: LLMClient
-                                                              ↓
+
 data + `run_question(..., llm, spec)`  →  `extract_with_llm` → `llm.generate_chat(...)`
 
 Main modules:
