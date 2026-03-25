@@ -1,67 +1,67 @@
 # Shunt Registry Data Extraction using LLMs
 
-This repository provides functionality for extracting data from text to populate the UK Shunt Registry (UKSR) database using Large Language Models (LLMs). 
+Functionality for extracting data from medical text to populate the UK Shunt Registry (UKSR) database using Large Language Models (LLMs).
 
 ## Usage
 
-Clone the repo, create a virtualenv, install dependencies, then work from the repository root (so paths like `data/...` resolve correctly):
+**Set up:** clone the repository, create a Python virtual environment, install dependencies, and run all commands from the **repository root** so paths like `data/...` work as intended.
 
-Example:
 ```bash
 python -m venv venv
-source/venv/bin/activate
+source venv/bin/activate   # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Steps:
-1. **Source data:** Export patient notes from CogStack Catalogue: one row per note with and a 'MRN' patient identifier. Place the CSV under `data/` (or set `INPUT_DATA_PATH` in `.env`).
+**Workflow:**
 
-2. **Gold / evaluation:** Provide a spreadsheet of registry fields to compare against, with `MRN` aligned to the notes export.
+1. **Source notes:** Export patient notes from the CogStack Catalogue as a CSV with **one row per note** and a column for the **medical record number (`MRN`)**. Save the file under `data/`.
 
-3. **Config:** Copy `.env.example` to `.env`. Adjust paths and `LLM_PROVIDER` and `MODEL_ID` as needed, or rely on defaults in `src/config.py`.
-    - **OpenAI:** Set `LLM_PROVIDER=openai`, `MODEL_ID` to a chat model you have access to, and put your key in `OPENAI_API_KEY`.
-    - **Ollama:** Install the [Ollama app](https://ollama.com/download), keep it running, then `ollama pull <model>` (e.g. `tinyllama`). Set `LLM_PROVIDER=ollama` and `MODEL_ID` to that model name.
-    - **Hugging Face:** Set `LLM_PROVIDER=hf` and `MODEL_ID` to a Hugging Face model id (e.g. `Qwen/Qwen2.5-0.5B-Instruct`). The model will download automatically, or can be manually downloaded if working in a closed environment e.g. UCLH TRE.
+2. **Reference answers (evaluation):** Provide a spreadsheet of known registry field values (the “gold standard”) keyed by `MRN`, aligned with the same patients as in the notes export.
 
-4. **Pre-process:** Run `python src/process_data.py`. This pivots long-format notes to a **wide** table (one row per MRN, columns such as `Discharge Summary`, `Op Note`, `Clerking`), merges with the evaluation file on `MRN`, and writes the merged CSV (default `data/merged_data.csv` per `MERGED_DATA_PATH`). This only needs to be run once.
+3. **Configuration:** Copy `.env.example` to `.env`. Set file paths if yours differ, and choose which LLM to use (`LLM_PROVIDER`, `MODEL_ID`). Defaults are defined in `src/config.py`.
+    - **OpenAI:** Set `LLM_PROVIDER=openai`, `MODEL_ID` to a chat model you can access, and add API key to `OPENAI_API_KEY`.
+    - **Ollama:** Install [Ollama](https://ollama.com/download), keep the app running, then `ollama pull <model>` (for example `tinyllama`). Set `LLM_PROVIDER=ollama` and `MODEL_ID` equal to the name of the model you downloaded.
+    - **Hugging Face:** Set `LLM_PROVIDER=hf` and `MODEL_ID` to a Hugging Face model id (for example `Qwen/Qwen3-0.6B`). The model downloads when first used; in an air-gapped environment you should download weights manually (for example on UCLH TRE).
 
-5. **Extract:** Run one or more questions via `question_runner.py`:
+4. **Merge notes and reference data:** Run `python src/process_data.py` once. It turns long-format notes into **one row per patient (`MRN`)** with separate columns for note types (e.g. discharge summary, operation note), merges in your reference spreadsheet on `MRN`, and writes a combined CSV.
+
+5. **Run extractions:** Use `question_runner.py` to ask the model one or more registry questions per patient:
 
 ```bash
-# Run a single question
+# Single question
 python src/question_runner.py q1
 
-# Run multiple questions
+# Several questions
 python src/question_runner.py q1 q4 q8
 
-# Run all registered questions
+# Every registered question
 python src/question_runner.py all
 
-# Limit the number of MRNs processed (0 = all)
+# Cap how many MRNs are processed (0 = no limit)
 python src/question_runner.py q1 --max-mrns 50
 ```
 
-Predictions append to the results CSV (`RESULTS_DATA_PATH`, default `all_results.csv`), including provider, model, merged data path, and timestamp.
+Each run **appends** rows to the results file `all_results.csv`.
 
-To **add a new question**: add its options to `registry_options.py`, add a prompt file to `prompts/`, then add one `QuestionSpec` entry to `QUESTION_REGISTRY` in `questions.py`. No other files need to change.
+**Adding a new question:** add the allowed answer list to `registry_options.py`, add a new prompt file under `prompts/`, and register one entry in `QUESTION_REGISTRY` in `questions.py`. Other Python modules should not need changes.
 
 ## Architecture
 
-config / env  →  LLMSettings  →  create_llm_client()  →  llm: LLMClient
+**Settings:** values from `.env` (and defaults) are loaded into `LLMSettings`; `create_llm_client()` builds an `LLMClient` for the selected provider.
 
-data + `run_question(..., llm, spec)`  →  `extract_with_llm` → `llm.generate_chat(...)`
+**Per patient and question:** `run_question(...)` calls `extract_with_llm`, which runs `generate_chat` on the LLM and, when the reply is JSON with an `answer` field, extracts that string so the stored prediction can be compared to the gold label.
 
-Main modules:
+**Repository layout:**
 
 ```
 .
-├── prompts/                 # templates named in each QuestionSpec
+├── prompts/                 # Text templates; each question points at one file by name
 └── src/
-    ├── config.py            # loads .env → paths + LLM settings
-    ├── process_data.py      # stage 1: pivot + merge → merged CSV
-    ├── questions.py         # QUESTION_REGISTRY: which questions exist
-    ├── question_runner.py   # stage 2: loop, CLI, run_question
-    ├── llm_client.py        # LLMClient implementations (OpenAI, HuggingFace, Ollama)
-    ├── registry_options.py  # valid registry options text fed into prompts
-    └── utils.py             # helpers used by question_runner
+    ├── config.py            # Environment-based paths and LLM defaults
+    ├── process_data.py      # Script to build merged dataset (notes + gold standard columns)
+    ├── questions.py         # Registry of questions (options, prompts, model options)
+    ├── question_runner.py   # Main entrypoint
+    ├── llm_client.py        # Standard interface with OpenAI, Ollama, and HF clients
+    ├── registry_options.py  # Shunt Registry option lists used for prompts and schemas
+    └── utils.py             # Utils inc. prompt loading, JSON normalization, metrics etc
 ```
