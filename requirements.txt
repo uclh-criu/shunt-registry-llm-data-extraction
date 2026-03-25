@@ -1,6 +1,7 @@
-openai
 pandas
-python-dotenv
 torch
 tqdm
 transformers
+python-dotenv
+openai
+ollama

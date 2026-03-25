@@ -13,7 +13,7 @@ from typing import Any, Protocol, runtime_checkable
 class LLMSettings:
     """Configuration for creating an LLM client."""
 
-    provider: str  # "openai" | "hf"
+    provider: str  # "openai" | "hf" | "ollama"
     model_id: str
     # Hugging Face generation (ignored for OpenAI for now)
     hf_max_new_tokens: int = 100
@@ -109,6 +109,38 @@ class HuggingFaceClient:
         return out.strip()
 
 
+class OllamaClient:
+    """Local (or remote) Ollama via https://github.com/ollama/ollama-python"""
+
+    def __init__(self, settings: LLMSettings):
+        if settings.provider != "ollama":
+            raise ValueError("OllamaClient requires settings.provider == 'ollama'")
+
+        from ollama import Client
+
+        self._settings = settings
+        host = os.getenv("OLLAMA_HOST", "").strip()
+        self._client = Client(host=host) if host else Client()
+        suffix = f" at {host}" if host else " (default host)"
+        print(f"Using Ollama with model: {settings.model_id}{suffix}")
+
+    @property
+    def provider(self) -> str:
+        return self._settings.provider
+
+    @property
+    def model_id(self) -> str:
+        return self._settings.model_id
+
+    def generate_chat(self, messages: list[dict[str, Any]]) -> str:
+        response = self._client.chat(
+            model=self._settings.model_id,
+            messages=messages,
+        )
+        content = response.message.content
+        return (content or "").strip()
+
+
 def create_llm_client(settings: LLMSettings) -> LLMClient:
     """Build the appropriate client for the given settings."""
     p = settings.provider
@@ -116,7 +148,11 @@ def create_llm_client(settings: LLMSettings) -> LLMClient:
         return OpenAIClient(settings)
     if p == "hf":
         return HuggingFaceClient(settings)
-    raise ValueError(f"Unknown provider: {p!r}. Must be 'openai' or 'hf'.")
+    if p == "ollama":
+        return OllamaClient(settings)
+    raise ValueError(
+        f"Unknown provider: {p!r}. Must be 'openai', 'hf', or 'ollama'."
+    )
 
 
 def llm_settings_from_config() -> LLMSettings:
