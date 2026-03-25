@@ -2,7 +2,7 @@
 Shared helpers for the extraction pipeline (single module, grouped by concern).
 
 Sections:
-  - Prompts + LLM: load_prompt, extract_with_llm
+  - Prompts + LLM: load_prompt, unwrap_structured_answer, extract_with_llm, options_to_enum_schema
   - Notes: combine_medical_texts
   - Gold + metrics: normalize_text, get_gold_standard, evaluate_predictions, print_evaluation_summary
   - Results: append_results_to_csv
@@ -10,7 +10,9 @@ Sections:
 
 from __future__ import annotations
 
+import json
 import os
+import re
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -20,8 +22,7 @@ from llm_client import LLMClient
 
 # --- Prompts + LLM -----------------------------------------------------------
 
-
-def load_prompt(prompt_file, options, note_text, max_length=4000):
+def load_prompt(prompt_file, options_text, note_text, max_length=4000):
     """Load a prompt template from file and fill in options and note text."""
     with open(f"prompts/{prompt_file}", "r") as f:
         prompt_template = f.read()
@@ -30,15 +31,68 @@ def load_prompt(prompt_file, options, note_text, max_length=4000):
         note_text[:max_length] if len(note_text) > max_length else note_text
     )
 
-    return prompt_template.format(options=options, note_text=truncated_note)
+    return prompt_template.format(options=options_text, note_text=truncated_note)
 
 
-def extract_with_llm(prompt_file, options, note_text, llm: LLMClient):
-    """Load prompt template and run chat completion via the given LLM client."""
-    prompt_content = load_prompt(prompt_file, options, note_text)
+def extract_with_llm(prompt_file, options_text, note_text, llm: LLMClient, **kwargs):
+    """Load prompt template and run chat completion via the given LLM client.
+
+    Extra **kwargs are forwarded to llm.generate_chat (provider-specific).
+    """
+    prompt_content = load_prompt(prompt_file, options_text, note_text)
     messages = [{"role": "user", "content": prompt_content}]
-    return llm.generate_chat(messages)
+    raw = llm.generate_chat(messages, **kwargs)
+    return unwrap_structured_answer(raw)
 
+
+def options_to_enum_schema(options_text: str) -> dict:
+    """Parse '- Label' lines from an options block into a JSON Schema enum.
+
+    Returns a schema like ``{"type": "object", "properties": {"answer": {...}},
+    "required": ["answer"]}``.
+
+    Use with Ollama ``format=``; pair OpenAI ``response_format`` separately
+    (e.g. ``{"type": "json_object"}``).
+    """
+    labels = [
+        m.group(1).strip()
+        for m in re.finditer(r"^- (.+)$", options_text, re.MULTILINE)
+    ]
+    if "UNKNOWN" in options_text:
+        labels.append("UNKNOWN")
+    return {
+        "type": "object",
+        "properties": {
+            "answer": {"type": "string", "enum": labels},
+        },
+        "required": ["answer"],
+    }
+
+def unwrap_structured_answer(raw: str) -> str:
+    """Pull ``answer`` out of structured JSON; otherwise return stripped text.
+
+    Handles optional `` ```json ... ``` `` fences and pretty-printed JSON.
+    If parsing fails or there is no ``answer`` key, returns ``raw`` stripped.
+    """
+    s = (raw or "").strip()
+    if not s:
+        return s
+    m = re.match(
+        r"^```(?:json)?\s*\r?\n?(.*?)\r?\n?```\s*$",
+        s,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if m:
+        s = m.group(1).strip()
+    if not s.lstrip().startswith("{"):
+        return (raw or "").strip()
+    try:
+        data = json.loads(s)
+    except json.JSONDecodeError:
+        return (raw or "").strip()
+    if isinstance(data, dict) and "answer" in data and data["answer"] is not None:
+        return str(data["answer"]).strip()
+    return (raw or "").strip()
 
 # --- Notes -------------------------------------------------------------------
 

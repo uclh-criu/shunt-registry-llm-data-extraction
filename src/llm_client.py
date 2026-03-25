@@ -31,8 +31,17 @@ class LLMClient(Protocol):
     @property
     def model_id(self) -> str: ...
 
-    def generate_chat(self, messages: list[dict[str, Any]]) -> str:
-        """Run chat-style generation; messages use OpenAI-style role/content dicts."""
+    def generate_chat(self, messages: list[dict[str, Any]], **kwargs: Any) -> str:
+        """Run chat-style generation; messages use OpenAI-style role/content dicts.
+
+        Provider-specific kwargs are forwarded to the underlying API. Each
+        provider picks out what it understands:
+
+        OpenAI:  response_format  (e.g. {"type": "json_object"})
+        Ollama:  format           (JSON Schema dict or Pydantic model_json_schema())
+                 options          (e.g. {"temperature": 0})
+        HF:     (no extras currently)
+        """
         ...
 
 
@@ -55,10 +64,19 @@ class OpenAIClient:
     def model_id(self) -> str:
         return self._settings.model_id
 
-    def generate_chat(self, messages: list[dict[str, Any]]) -> str:
+    def generate_chat(self, messages: list[dict[str, Any]], **kwargs: Any) -> str:
+        api_kwargs: dict[str, Any] = {}
+        if "response_format" in kwargs:
+            api_kwargs["response_format"] = kwargs["response_format"]
+            messages = [
+                {"role": "system", "content": "Respond in JSON with an 'answer' key."},
+                *messages,
+            ]
+
         response = self._client.chat.completions.create(
             model=self._settings.model_id,
             messages=messages,
+            **api_kwargs,
         )
         content = response.choices[0].message.content
         return (content or "").strip()
@@ -88,7 +106,7 @@ class HuggingFaceClient:
     def model_id(self) -> str:
         return self._settings.model_id
 
-    def generate_chat(self, messages: list[dict[str, Any]]) -> str:
+    def generate_chat(self, messages: list[dict[str, Any]], **kwargs: Any) -> str:
         text = self._tokenizer.apply_chat_template(
             messages,
             tokenize=False,
@@ -132,10 +150,17 @@ class OllamaClient:
     def model_id(self) -> str:
         return self._settings.model_id
 
-    def generate_chat(self, messages: list[dict[str, Any]]) -> str:
+    def generate_chat(self, messages: list[dict[str, Any]], **kwargs: Any) -> str:
+        api_kwargs: dict[str, Any] = {}
+        if "format" in kwargs:
+            api_kwargs["format"] = kwargs["format"]
+        if "options" in kwargs:
+            api_kwargs["options"] = kwargs["options"]
+
         response = self._client.chat(
             model=self._settings.model_id,
             messages=messages,
+            **api_kwargs,
         )
         content = response.message.content
         return (content or "").strip()

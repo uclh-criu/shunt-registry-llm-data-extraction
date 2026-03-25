@@ -17,8 +17,8 @@ Override the MRN limit (default = 10; 0 = all MRNs):
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
-from typing import Optional, Tuple
+from dataclasses import dataclass, field
+from typing import Any, Optional, Tuple
 
 import pandas as pd
 from tqdm import tqdm
@@ -59,6 +59,14 @@ class QuestionSpec:
     max_mrns: Optional[int] = 10
     """If set, only process the first N unique MRNs (after dropna). None = all."""
 
+    llm_kwargs: dict[str, Any] = field(default_factory=dict)
+    """Provider-specific kwargs forwarded to generate_chat on every call.
+
+    Examples:
+        OpenAI:  {"response_format": {"type": "json_object"}}
+        Ollama:  {"format": MyPydanticModel.model_json_schema(), "options": {"temperature": 0}}
+    """
+
 
 def run_question(
     data_merged: pd.DataFrame,
@@ -94,7 +102,8 @@ def run_question(
                 data_merged, mrn, list(spec.note_sources)
             )
             prediction = extract_with_llm(
-                spec.prompt_file, spec.options, note_text, llm
+                spec.prompt_file, spec.options, note_text, llm,
+                **spec.llm_kwargs,
             )
 
             results.append(
