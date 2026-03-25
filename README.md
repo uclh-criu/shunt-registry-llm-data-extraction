@@ -23,7 +23,11 @@ pip install -r requirements.txt
     - **Ollama:** Install [Ollama](https://ollama.com/download), keep the app running, then `ollama pull <model>` (for example `tinyllama`). Set `LLM_PROVIDER=ollama` and `MODEL_ID` equal to the name of the model you downloaded.
     - **Hugging Face:** Set `LLM_PROVIDER=hf` and `MODEL_ID` to a Hugging Face model id (for example `Qwen/Qwen3-0.6B`). The model downloads when first used; in an air-gapped environment you should download weights manually (for example on UCLH TRE).
 
-4. **Merge notes and reference data:** Run `python src/process_data.py` once. It turns long-format notes into **one row per patient (`MRN`)** with separate columns for note types (e.g. discharge summary, operation note), merges in your reference spreadsheet on `MRN`, and writes a combined CSV.
+4. **Merge notes and reference data:** Run the script below once. It turns long-format notes into **one row per patient (`MRN`)** with separate columns for note types (e.g. discharge summary, operation note), merges in your reference spreadsheet on `MRN`, and writes a combined CSV.
+
+```bash
+python src/process_data.py
+```
 
 5. **Run extractions:** Use `question_runner.py` to ask the model one or more registry questions per patient:
 
@@ -64,4 +68,28 @@ Each run **appends** rows to the results file `all_results.csv`.
     ├── llm_client.py        # Standard interface with OpenAI, Ollama, and HF clients
     ├── registry_options.py  # Shunt Registry option lists used for prompts and schemas
     └── utils.py             # Utils inc. prompt loading, JSON normalization, metrics etc
+```
+
+## Note on running Ollama models in TRE
+
+First download Ollama to your local device.
+
+Then pull the model you are interested in e.g.
+```bash
+ollama pull gpt-oss:120b
+```
+
+The model will be saved to one of the following locations:
+```bash
+macOS: ~/.ollama/models
+Linux: /usr/share/ollama/.ollama/models
+Windows: C:/Users/%username%/.ollama/models
+```
+
+Upload the .ollama folder into the TRE Airlock and then download into your VM. Then run the commands below (note: these assume a username of 3Thd and that you downloaded into your Desktop)
+
+```bash
+sudo cp -a /home/3Thd/Desktop/.ollama/models/. /usr/share/ollama/.ollama/models/
+sudo chown -R ollama:ollama /usr/share/ollama/.ollama
+sudo systemctl restart ollama
 ```
