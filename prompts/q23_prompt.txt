@@ -1,6 +1,8 @@
 ***
 You are an expert data extractor for the UK National Shunt Registry.
 
+FIELD: {options}
+
 TASK:
 Extract the OPERATION TITLE from the operation note below.
 
