@@ -2,7 +2,7 @@
 Shared helpers for the extraction pipeline (single module, grouped by concern).
 
 Sections:
-  - Prompts + LLM: load_prompt, unwrap_structured_answer, extract_with_llm, options_to_enum_schema
+  - Prompts + LLM: load_prompt, unwrap_structured_answer, extract_with_llm, options_to_enum_schema, free_text_answer_schema
   - Notes: combine_medical_texts
   - Gold + metrics: normalize_text, get_gold_standard, evaluate_predictions, print_evaluation_summary
   - Results: append_results_to_csv
@@ -67,6 +67,20 @@ def options_to_enum_schema(options_text: str) -> dict:
         },
         "required": ["answer"],
     }
+
+
+def free_text_answer_schema() -> dict:
+    """JSON Schema for a single free-text ``answer`` (no enum).
+
+    Use for questions like operation titles where the label set is not closed.
+    Pair with OpenAI ``response_format: {"type": "json_object"}`` and Ollama ``format=``.
+    """
+    return {
+        "type": "object",
+        "properties": {"answer": {"type": "string"}},
+        "required": ["answer"],
+    }
+
 
 def unwrap_structured_answer(raw: str) -> str:
     """Pull ``answer`` out of structured JSON; otherwise return stripped text.
