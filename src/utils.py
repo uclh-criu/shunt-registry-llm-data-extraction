@@ -163,6 +163,11 @@ def evaluate_predictions(predictions, gold_standards, question_name):
     ``question_name`` is accepted for API consistency with call sites; metrics are not
     split by question yet.
 
+    Precision, recall, and F1 are **macro** averages: for each distinct label we
+    compute one-vs-rest P/R/F1, then average across labels. This treats each class
+    equally (fair for imbalanced yes/no tasks) and avoids picking an arbitrary
+    "positive" class for binary cases.
+
     Returns a dict with accuracy, precision, recall, f1, counts, and example lists.
     """
     eval_data = [(p, g) for p, g in zip(predictions, gold_standards) if g is not None]
@@ -192,38 +197,25 @@ def evaluate_predictions(predictions, gold_standards, question_name):
 
     all_classes = set(preds_normalized + golds_normalized)
 
-    if len(all_classes) == 2:
-        pos_class = list(all_classes)[0]
-        precision, recall, f1 = _prf_for_class(
-            preds_normalized, golds_normalized, pos_class
+    class_metrics: dict[str, dict] = {}
+    for cls in all_classes:
+        prec, rec, f1_score = _prf_for_class(
+            preds_normalized, golds_normalized, cls
         )
-    else:
-        class_metrics: dict[str, dict] = {}
-        for cls in all_classes:
-            prec, rec, f1_score = _prf_for_class(
-                preds_normalized, golds_normalized, cls
-            )
-            class_metrics[cls] = {
-                "precision": prec,
-                "recall": rec,
-                "f1": f1_score,
-            }
+        class_metrics[cls] = {
+            "precision": prec,
+            "recall": rec,
+            "f1": f1_score,
+        }
 
-        precision = (
-            sum(m["precision"] for m in class_metrics.values()) / len(class_metrics)
-            if class_metrics
-            else 0.0
-        )
-        recall = (
-            sum(m["recall"] for m in class_metrics.values()) / len(class_metrics)
-            if class_metrics
-            else 0.0
-        )
-        f1 = (
-            sum(m["f1"] for m in class_metrics.values()) / len(class_metrics)
-            if class_metrics
-            else 0.0
-        )
+    n_cls = len(class_metrics)
+    precision = (
+        sum(m["precision"] for m in class_metrics.values()) / n_cls if n_cls else 0.0
+    )
+    recall = (
+        sum(m["recall"] for m in class_metrics.values()) / n_cls if n_cls else 0.0
+    )
+    f1 = sum(m["f1"] for m in class_metrics.values()) / n_cls if n_cls else 0.0
 
     correct_examples = []
     incorrect_examples = []
