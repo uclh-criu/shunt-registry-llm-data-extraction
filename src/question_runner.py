@@ -17,6 +17,7 @@ Override the MRN limit (default = 10; 0 = all MRNs):
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Any, Optional, Tuple
 
@@ -24,6 +25,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from llm_client import LLMClient, create_llm_client_from_config
+from config import RESULTS_DATA_PATH
 from utils import (
     append_results_to_csv,
     combine_medical_texts,
@@ -137,7 +139,7 @@ def run_question(
     df_results = pd.DataFrame(results)
     print(f"\nProcessed {len(results)} records")
 
-    append_results_to_csv(
+    rows_logged = append_results_to_csv(
         question_name=spec.question_name,
         predictions=predictions,
         gold_standards=gold_standards,
@@ -150,6 +152,18 @@ def run_question(
         predictions, gold_standards, spec.question_name
     )
     print_evaluation_summary(metrics, spec.question_name)
+
+    results_path = Path(RESULTS_DATA_PATH).resolve()
+    if rows_logged:
+        print(
+            f"Results file: appended {rows_logged} row(s) to {results_path}",
+            flush=True,
+        )
+    else:
+        print(
+            f"Results file: nothing appended (0 rows). Path: {results_path}",
+            flush=True,
+        )
 
     return df_results
 

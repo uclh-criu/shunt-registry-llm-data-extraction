@@ -288,7 +288,7 @@ def append_results_to_csv(
     mrns,
     llm: LLMClient,
     merged_data_path: str,
-):
+) -> int:
     """
     Append per-MRN results for a question to a single CSV file.
 
@@ -299,6 +299,9 @@ def append_results_to_csv(
         mrns: list/array of MRNs (len N)
         llm: client used for this run (provider/model_id logged from it)
         merged_data_path: path to the merged input CSV used for this run
+
+    Returns:
+        Number of rows appended.
     """
     run_ts = datetime.now(timezone.utc).isoformat()
 
@@ -323,3 +326,4 @@ def append_results_to_csv(
 
     write_header = not os.path.exists(RESULTS_DATA_PATH)
     df_append.to_csv(RESULTS_DATA_PATH, mode="a", header=write_header, index=False)
+    return len(rows)
