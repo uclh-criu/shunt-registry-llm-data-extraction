@@ -45,7 +45,7 @@ python src/question_runner.py all
 python src/question_runner.py q1 --max-mrns 50
 ```
 
-Each run **appends** rows to the results file `all_results.csv`.
+Each run **appends** rows to the results file defined in the .env config.
 
 6. You can then run the below to get a simple performance summary per question:
 ```bash
