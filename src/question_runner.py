@@ -10,7 +10,7 @@ Run multiple questions:
 Run all registered questions:
     python question_runner.py all
 
-Override the MRN limit (default = 10; 0 = all MRNs):
+Override the MRN limit (default = all MRNs; 0 = all MRNs):
     python question_runner.py q1 --max-mrns 0
 """
 
@@ -58,7 +58,7 @@ class QuestionSpec:
     note_sources: Tuple[str, ...] = ("Discharge Summary", "Op Note", "Clerking")
     """Wide-table columns to concatenate as input notes."""
 
-    max_mrns: Optional[int] = 10
+    max_mrns: Optional[int] = None
     """If set, only process the first N unique MRNs (after dropna). None = all."""
 
     llm_kwargs: dict[str, Any] = field(default_factory=dict)
@@ -188,7 +188,7 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="Override max MRNs per question (0 = all MRNs; default = spec default).",
+        help="Limit MRNs per question (0 = all MRNs; default = all MRNs).",
     )
     return parser
 
