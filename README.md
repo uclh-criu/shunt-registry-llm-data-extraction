@@ -47,7 +47,14 @@ python src/question_runner.py q1 --max-mrns 50
 
 Each run **appends** rows to the results file `all_results.csv`.
 
-**Adding a new question:** add the allowed answer list to `registry_options.py`, add a new prompt file under `prompts/`, and register one entry in `QUESTION_REGISTRY` in `questions.py`. Other Python modules should not need changes.
+6. You can then run the below to get a simple performance summary per question:
+```bash
+python src/evaluate_results.py
+```
+
+**Adding a new question:** 
+
+Add the allowed answer list to `registry_options.py`, add a new prompt file under `prompts/`, and register one entry in `QUESTION_REGISTRY` in `questions.py`. Other Python modules should not need changes.
 
 ## Architecture
 
