@@ -146,4 +146,4 @@ q23_options = "Operation title"
 q25_options = "Procedure"
 
 # Q26: FIELD label for prompt template; schema is free_text_answer_schema()
-q26_options = "Post-operative plan"
+q26_options = "Post-op plan"

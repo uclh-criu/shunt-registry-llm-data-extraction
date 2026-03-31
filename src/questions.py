@@ -213,7 +213,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
     ),
     "q26": QuestionSpec(
         question_name="Q26 - Post-operative plan",
-        gold_standard_col="Post-operative plan",
+        gold_standard_col="Post-op plan",
         prompt_file="q26_prompt.txt",
         options=q26_options,
         prediction_key="Q26_Post_Operative_Plan",
