@@ -78,8 +78,19 @@ def _question_key(question_name: str) -> str:
     return question_name
 
 
+def _question_sort_key(question_name: str) -> tuple[int, str]:
+    qk = _question_key(question_name)
+    m = re.match(r"^Q(\d+)$", qk, re.IGNORECASE)
+    if m:
+        return (int(m.group(1)), qk)
+    return (10**9, qk)
+
+
 def evaluate_results(df: pd.DataFrame, question_width: int) -> None:
-    questions = sorted(str(q) for q in df["Question"].dropna().unique())
+    questions = sorted(
+        (str(q) for q in df["Question"].dropna().unique()),
+        key=_question_sort_key,
+    )
     if not questions:
         raise SystemExit("No question values found in 'Question' column.")
 
