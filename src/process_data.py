@@ -1,89 +1,111 @@
-'''
-Script to pre-process data ready for LLM extraction
-'''
+"""
+Pre-process the combined CSV (notes + gold standard columns) into the merged dataset
+used by the LLM extraction pipeline.
+"""
 
 import pandas as pd
-from config import INPUT_DATA_PATH, EVAL_DATA_PATH, MERGED_DATA_PATH
+from config import INPUT_DATA_PATH, MERGED_DATA_PATH
 
-def load_data():
-    data = pd.read_csv(INPUT_DATA_PATH, encoding='latin-1')
-    evaluation = pd.read_csv(EVAL_DATA_PATH, encoding='latin-1')
-    return data, evaluation
 
-def format_input_data(data):
-    # 1. Create MRN column from the new ID
-    data['MRN'] = data['patient']
+def load_data() -> pd.DataFrame:
+    """Load the single combined CSV (notes + GOLD columns)."""
+    return pd.read_csv(INPUT_DATA_PATH, encoding="latin-1")
 
-    # 2. Map notetype values to the old column names used in the notebook
-    note_type_map = {
-        # new notetype value -> existing column name
-        'Discharge Summary': 'Discharge Summary',
-        'Op Note': 'Op Note',
-        'Clerking': 'Clerking',
-        'MDT Outcome': 'MDT Outcome'
+
+def build_merged_dataset(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Rename GOLD columns to the names expected in questions.py and keep only
+    MRN, note columns, and the gold-standard columns used for evaluation.
+    """
+    # Map GOLD columns in the new CSV to the short names used in questions.py
+    rename_map = {
+        # Q1
+        "Primary reason for shunting | Shunt Operation(GOLD)": "Primary reason for shunting",
+        # Q4
+        "Primary reason for revision | Shunt Operation": "Primary reason for revision",
+        # Q8
+        "Choroid plexectomy | Shunt Operation": "Choroid plexectomy",
+        # Q9
+        "Subtemporal decompression | Shunt Operation": "Subtemporal decompression",
+        # Q10
+        "Ventricular size prior to surgery | Shunt Operation": "Ventricular size prior to surgery",
+        # Q11
+        "Concurrent chemoradiotherapy for primary CNS tumour | Shunt Operation(GOLD)": (
+            "Concurrent chemoradiotherapy for primary CNS tumour"
+        ),
+        # Q12
+        "Co-existing CNS infection | Shunt Operation(GOLD)": "Co-existing CNS infection",
+        # Q13
+        "CNS infection in the last 6 months | Shunt Operation(GOLD)": (
+            "CNS infection in the last 6 months"
+        ),
+        # Q18
+        "Consultant presence | Shunt Operation": "Consultant presence",
+        # Q23
+        "Operation title | Shunt Operation": "Operation title",
+        # Q25
+        "Procedure | Shunt Operation": "Procedure",
+        # Q26
+        "Post-op plan | Shunt Operation": "Post-op plan",
     }
 
-    data['notetype_clean'] = data['notetype'].map(note_type_map).fillna(data['notetype'])
+    data = data.rename(columns=rename_map)
 
-    # 3. Pivot from long (multiple rows per MRN) to wide (one row per MRN)
-    # If there are multiple notes of the same type for a patient, concatenate them.
-    wide = (
-        data
-        .sort_values('notecreationinstant')
-        .groupby(['MRN', 'notetype_clean'])['note']
-        .apply(lambda s: "\n\n".join(str(x) for x in s if pd.notna(x)))
-        .unstack('notetype_clean')
-        .reset_index()
-    )
+    # Note columns to preserve for prompts (including new ones you listed)
+    note_cols = [
+        "Clerking",
+        "Op Note",
+        "Discharge Summary",
+        "Imaging Report",
+        "MDT Outcome Pre Proc Date",
+        "MDT Outcome Pre Proc",
+        "MDT Outcome Post Proc Date",
+        "MDT Outcome Post Proc",
+        "ImplantName",
+        "ManufacturerFull",
+    ]
 
-    # 4. Replace original data with wide-format version expected by rest of notebook
-    data = wide
+    # Gold-standard columns as referenced in questions.py
+    gold_cols = [
+        "Primary reason for shunting",
+        "Primary reason for revision",
+        "Choroid plexectomy",
+        "Subtemporal decompression",
+        "Ventricular size prior to surgery",
+        "Concurrent chemoradiotherapy for primary CNS tumour",
+        "Co-existing CNS infection",
+        "CNS infection in the last 6 months",
+        "Consultant presence",
+        "Operation title",
+        "Procedure",
+        "Post-op plan",
+    ]
 
-    return data
+    # Identifier columns to always carry through
+    id_cols = ["MRN", "CSN"]
 
-def clean_eval_data(evaluation):
-# Clean evaluation column names: remove " | Shunt Operation" suffix
-    evaluation = evaluation.rename(
-        columns=lambda c: c.replace(" | Shunt Operation", "")
-    )
-    return evaluation
+    cols_to_keep = id_cols + note_cols + gold_cols
 
-def check_mrn_overlap(data, evaluation):
-    # Check MRN overlaps between datasets
-    print("=== Overlap Analysis ===\n")
+    missing = [c for c in cols_to_keep if c not in data.columns]
+    if missing:
+        print("Warning: the following expected columns were not found in the input data:")
+        for c in missing:
+            print(f"  - {c}")
 
-    # MRN overlaps
-    data_mrns = set(data['MRN'].dropna().unique())
-    eval_mrns = set(evaluation['MRN'].dropna().unique())
-    mrn_overlap = data_mrns.intersection(eval_mrns)
+    present_cols = [c for c in cols_to_keep if c in data.columns]
+    data_merged = data[present_cols].copy()
 
-    print(f"MRN Statistics:")
-    print(f"  - Unique MRNs in data: {len(data_mrns)}")
-    print(f"  - Unique MRNs in evaluation: {len(eval_mrns)}")
-    print(f"  - Overlapping MRNs: {len(mrn_overlap)}")
-    print(f"  - Overlap percentage (data): {len(mrn_overlap)/len(data_mrns)*100:.1f}%")
-    print(f"  - Overlap percentage (evaluation): {len(mrn_overlap)/len(eval_mrns)*100:.1f}%")
-    print(f"  - MRNs only in data: {len(data_mrns - eval_mrns)}")
-    print(f"  - MRNs only in evaluation: {len(eval_mrns - data_mrns)}")
-
-def merge_data(data, evaluation):
-    # Merge data and evaluation datasets on MRN
-    # This creates a merged dataset with both source data and gold standard labels
-    data_merged = data.merge(
-        evaluation,
-        on='MRN',
-        how='left',
-        suffixes=('', '_eval')
-    )
-    print("Merged dataset created:")
+    print("Merged dataset created from combined CSV:")
     print(f"  - Total records: {len(data_merged)}")
-    print(f"  - Records with gold standard: {data_merged['Primary reason for shunting'].notna().sum()}")
-    print(f"  - Records without gold standard: {data_merged['Primary reason for shunting'].isna().sum()}")
-    data_merged.to_csv(MERGED_DATA_PATH, index=False)
+    if "Primary reason for shunting" in data_merged.columns:
+        has_q1 = data_merged["Primary reason for shunting"].notna().sum()
+        print(f"  - Records with Q1 gold standard: {has_q1}")
+        print(f"  - Records without Q1 gold standard: {len(data_merged) - has_q1}")
+
+    return data_merged
+
 
 if __name__ == "__main__":
-    data, evaluation = load_data()
-    data = format_input_data(data)
-    evaluation = clean_eval_data(evaluation)
-    check_mrn_overlap(data, evaluation)
-    merge_data(data, evaluation)
+    data = load_data()
+    data_merged = build_merged_dataset(data)
+    data_merged.to_csv(MERGED_DATA_PATH, index=False)
