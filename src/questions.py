@@ -196,51 +196,51 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
             "options": {"temperature": 0},  # Ollama deterministic
         },
     ),
-    "q23": QuestionSpec(
-        question_name="Q23 - Operation title",
-        gold_standard_col="Operation title",
-        prompt_file="q23_prompt.txt",
-        options=q23_options,
-        prediction_key="Q23_Operation_Title",
-        note_sources=ALL_NOTES_SOURCES,
-        llm_kwargs={
-            "format": _q23_schema,  # free-text JSON answer
-            "response_format": {
-                "type": "json_object",
-            },
-            "options": {"temperature": 0},
-        },
-    ),
-    "q25": QuestionSpec(
-        question_name="Q25 - Procedure",
-        gold_standard_col="Procedure",
-        prompt_file="q25_prompt.txt",
-        options=q25_options,
-        prediction_key="Q25_Procedure",
-        note_sources=ALL_NOTES_SOURCES,
-        llm_kwargs={
-            "format": _q25_schema,
-            "response_format": {
-                "type": "json_object",
-            },
-            "options": {"temperature": 0},
-        },
-    ),
-    "q26": QuestionSpec(
-        question_name="Q26 - Post-operative plan",
-        gold_standard_col="Post-op plan",
-        prompt_file="q26_prompt.txt",
-        options=q26_options,
-        prediction_key="Q26_Post_Operative_Plan",
-        note_sources=ALL_NOTES_SOURCES,
-        llm_kwargs={
-            "format": _q26_schema,
-            "response_format": {
-                "type": "json_object",
-            },
-            "options": {"temperature": 0},
-        },
-    ),
+    # "q23": QuestionSpec(
+    #     question_name="Q23 - Operation title",
+    #     gold_standard_col="Operation title",
+    #     prompt_file="q23_prompt.txt",
+    #     options=q23_options,
+    #     prediction_key="Q23_Operation_Title",
+    #     note_sources=ALL_NOTES_SOURCES,
+    #     llm_kwargs={
+    #         "format": _q23_schema,  # free-text JSON answer
+    #         "response_format": {
+    #             "type": "json_object",
+    #         },
+    #         "options": {"temperature": 0},
+    #     },
+    # ),
+    # "q25": QuestionSpec(
+    #     question_name="Q25 - Procedure",
+    #     gold_standard_col="Procedure",
+    #     prompt_file="q25_prompt.txt",
+    #     options=q25_options,
+    #     prediction_key="Q25_Procedure",
+    #     note_sources=ALL_NOTES_SOURCES,
+    #     llm_kwargs={
+    #         "format": _q25_schema,
+    #         "response_format": {
+    #             "type": "json_object",
+    #         },
+    #         "options": {"temperature": 0},
+    #     },
+    # ),
+    # "q26": QuestionSpec(
+    #     question_name="Q26 - Post-operative plan",
+    #     gold_standard_col="Post-op plan",
+    #     prompt_file="q26_prompt.txt",
+    #     options=q26_options,
+    #     prediction_key="Q26_Post_Operative_Plan",
+    #     note_sources=ALL_NOTES_SOURCES,
+    #     llm_kwargs={
+    #         "format": _q26_schema,
+    #         "response_format": {
+    #             "type": "json_object",
+    #         },
+    #         "options": {"temperature": 0},
+    #     },
+    # ),
     # -----------------------------------------------------------------------
     # Add further questions here, e.g.:
     # "q4": QuestionSpec(
