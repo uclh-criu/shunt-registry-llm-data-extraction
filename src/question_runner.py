@@ -95,9 +95,16 @@ def run_question(
     results: list[dict] = []
     predictions: list = []
     gold_standards: list = []
+    csns: list[str] = []
 
     for mrn in tqdm(mrns, total=len(mrns)):
         gold_standard = get_gold_standard(data_merged, mrn, spec.gold_standard_col)
+        mrn_data = data_merged[data_merged["MRN"] == mrn]
+        if not mrn_data.empty and "CSN" in mrn_data.columns:
+            csn_value = mrn_data["CSN"].iloc[0]
+            csn = "" if pd.isna(csn_value) else str(csn_value)
+        else:
+            csn = ""
 
         try:
             note_text = combine_medical_texts(
@@ -119,6 +126,7 @@ def run_question(
             )
             predictions.append(prediction)
             gold_standards.append(gold_standard)
+            csns.append(csn)
             print(f"MRN: {mrn} -> {prediction}")
 
         except Exception as e:
@@ -135,6 +143,7 @@ def run_question(
             )
             predictions.append(err)
             gold_standards.append(gold_standard)
+            csns.append(csn)
 
     df_results = pd.DataFrame(results)
     print(f"\nProcessed {len(results)} records")
@@ -144,6 +153,7 @@ def run_question(
         predictions=predictions,
         gold_standards=gold_standards,
         mrns=mrns,
+        csns=csns,
         llm=llm,
         merged_data_path=merged_data_path,
     )

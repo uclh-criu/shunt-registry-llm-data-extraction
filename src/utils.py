@@ -300,6 +300,7 @@ def append_results_to_csv(
     predictions,
     gold_standards,
     mrns,
+    csns,
     llm: LLMClient,
     merged_data_path: str,
 ) -> int:
@@ -311,6 +312,7 @@ def append_results_to_csv(
         predictions: list of model outputs (len N)
         gold_standards: list of gold values (len N, None if unavailable)
         mrns: list/array of MRNs (len N)
+        csns: list/array of CSNs (len N)
         llm: client used for this run (provider/model_id logged from it)
         merged_data_path: path to the merged input CSV used for this run
 
@@ -320,19 +322,23 @@ def append_results_to_csv(
     run_ts = datetime.now(timezone.utc).isoformat()
 
     rows = []
-    for mrn, pred, gold in zip(mrns, predictions, gold_standards):
+    for mrn, csn, pred, gold in zip(mrns, csns, predictions, gold_standards):
         has_gold = gold is not None
+        is_correct = (
+            has_gold and normalize_text(pred) == normalize_text(gold)
+        )
         rows.append(
             {
+                "Run_Timestamp": run_ts,
                 "MRN": mrn,
+                "CSN": csn,
                 "Question": question_name,
-                "Prediction": pred,
-                "Gold_Standard": "" if gold is None else gold,
-                "Has_Gold": has_gold,
                 "Provider": llm.provider,
                 "Model": llm.model_id,
-                "Merged_Data_Path": merged_data_path,
-                "Run_Timestamp": run_ts,
+                "Prediction": pred,
+                "Has_Gold": has_gold,
+                "Gold_Standard": "" if gold is None else gold,
+                "Correct": "Yes" if is_correct else "No",
             }
         )
 
