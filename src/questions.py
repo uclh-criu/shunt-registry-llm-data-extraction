@@ -41,6 +41,21 @@ _q23_schema = free_text_answer_schema()
 _q25_schema = free_text_answer_schema()
 _q26_schema = free_text_answer_schema()
 
+ALL_NOTES_SOURCES = (
+    "Clerking",
+    "Op Note",
+    "Discharge Summary",
+    "Imaging Report",
+    "MDT Outcome Pre Proc Date",
+    "MDT Outcome Pre Proc",
+    "MDT Outcome Post Proc Date",
+    "MDT Outcome Post Proc",
+    "ImplantName",
+    "ManufacturerFull",
+)
+
+OP_NOTE_ONLY = ("Op Note",)
+
 # ---------------------------------------------------------------------------
 # Question specs — one entry per registry question
 # ---------------------------------------------------------------------------
@@ -52,7 +67,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q1_prompt.txt",
         options=q1_options,
         prediction_key="Q1_Primary_Reason_Shunting",
-        note_sources=("Discharge Summary", "Op Note", "Clerking"),
+        note_sources=ALL_NOTES_SOURCES,
         llm_kwargs={
             "format": _q1_schema,        # Ollama structured output
             "response_format": {          # OpenAI JSON mode
@@ -67,7 +82,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q4_prompt.txt",
         options=q4_options,
         prediction_key="Q4_Primary_Reason_Revision",
-        note_sources=("Discharge Summary", "Op Note", "Clerking"),
+        note_sources=ALL_NOTES_SOURCES,
         llm_kwargs={
             "format": _q4_schema,  # Ollama structured output
             "response_format": {  # OpenAI JSON mode
@@ -82,7 +97,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q8_prompt.txt",
         options=q8_options,
         prediction_key="Q8_Choroid_Plexectomy",
-        note_sources=("Discharge Summary", "Op Note", "Clerking"),
+        note_sources=OP_NOTE_ONLY,
         llm_kwargs={
             "format": _q8_schema,  # Ollama structured output
             "response_format": {  # OpenAI JSON mode
@@ -97,7 +112,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q9_prompt.txt",
         options=q9_options,
         prediction_key="Q9_Subtemporal_Decompression",
-        note_sources=("Discharge Summary", "Op Note", "Clerking"),
+        note_sources=OP_NOTE_ONLY,
         llm_kwargs={
             "format": _q9_schema,  # Ollama structured output
             "response_format": {  # OpenAI JSON mode
@@ -112,7 +127,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q10_prompt.txt",
         options=q10_options,
         prediction_key="Q10_Ventricular_Size_Prior_Surgery",
-        note_sources=("Discharge Summary", "Op Note", "Clerking"),
+        note_sources=ALL_NOTES_SOURCES,
         llm_kwargs={
             "format": _q10_schema,  # Ollama structured output
             "response_format": {  # OpenAI JSON mode
@@ -127,7 +142,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q11_prompt.txt",
         options=q11_options,
         prediction_key="Q11_Concurrent_Chemoradiotherapy",
-        note_sources=("Discharge Summary", "Op Note", "Clerking"),
+        note_sources=ALL_NOTES_SOURCES,
         llm_kwargs={
             "format": _q11_schema,  # Ollama structured output
             "response_format": {  # OpenAI JSON mode
@@ -142,7 +157,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q12_prompt.txt",
         options=q12_options,
         prediction_key="Q12_Coexisting_CNS_Infection",
-        note_sources=("Discharge Summary", "Op Note", "Clerking"),
+        note_sources=ALL_NOTES_SOURCES,
         llm_kwargs={
             "format": _q12_schema,  # Ollama structured output
             "response_format": {  # OpenAI JSON mode
@@ -157,7 +172,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q13_prompt.txt",
         options=q13_options,
         prediction_key="Q13_CNS_Infection_Last_6_Months",
-        note_sources=("Discharge Summary", "Op Note", "Clerking"),
+        note_sources=ALL_NOTES_SOURCES,
         llm_kwargs={
             "format": _q13_schema,  # Ollama structured output
             "response_format": {  # OpenAI JSON mode
@@ -172,7 +187,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q18_prompt.txt",
         options=q18_options,
         prediction_key="Q18_Consultant_Presence",
-        note_sources=("Op Note",),
+        note_sources=OP_NOTE_ONLY,
         llm_kwargs={
             "format": _q18_schema,  # Ollama structured output
             "response_format": {  # OpenAI JSON mode
@@ -187,7 +202,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q23_prompt.txt",
         options=q23_options,
         prediction_key="Q23_Operation_Title",
-        note_sources=("Op Note",),
+        note_sources=ALL_NOTES_SOURCES,
         llm_kwargs={
             "format": _q23_schema,  # free-text JSON answer
             "response_format": {
@@ -202,7 +217,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q25_prompt.txt",
         options=q25_options,
         prediction_key="Q25_Procedure",
-        note_sources=("Op Note",),
+        note_sources=ALL_NOTES_SOURCES,
         llm_kwargs={
             "format": _q25_schema,
             "response_format": {
@@ -217,7 +232,7 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         prompt_file="q26_prompt.txt",
         options=q26_options,
         prediction_key="Q26_Post_Operative_Plan",
-        note_sources=("Op Note",),
+        note_sources=ALL_NOTES_SOURCES,
         llm_kwargs={
             "format": _q26_schema,
             "response_format": {
