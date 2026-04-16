@@ -13,6 +13,7 @@ check that Op Note text exists (Yes/No), not a prompt-based extraction.
 from question_runner import QuestionSpec
 from registry_options import (
     q1_options,
+    q2_options,
     q4_options,
     q8_options,
     q9_options,
@@ -29,6 +30,7 @@ from utils import free_text_answer_schema, options_to_enum_schema
 
 
 _q1_schema = options_to_enum_schema(q1_options)
+_q2_schema = options_to_enum_schema(q2_options)
 _q4_schema = options_to_enum_schema(q4_options)
 _q8_schema = options_to_enum_schema(q8_options)
 _q9_schema = options_to_enum_schema(q9_options)
@@ -71,6 +73,21 @@ QUESTION_REGISTRY: dict[str, QuestionSpec] = {
         llm_kwargs={
             "format": _q1_schema,        # Ollama structured output
             "response_format": {          # OpenAI JSON mode
+                "type": "json_object",
+            },
+            "options": {"temperature": 0},  # Ollama deterministic
+        },
+    ),
+    "q2": QuestionSpec(
+        question_name="Q2 - EVD insertion in the last 30 days",
+        gold_standard_col="EVD insertion in the last 30 days",
+        prompt_file="q2_prompt.txt",
+        options=q2_options,
+        prediction_key="Q2_EVD_Insertion_Last_30_Days",
+        note_sources=ALL_NOTES_SOURCES,
+        llm_kwargs={
+            "format": _q2_schema,  # Ollama structured output
+            "response_format": {  # OpenAI JSON mode
                 "type": "json_object",
             },
             "options": {"temperature": 0},  # Ollama deterministic

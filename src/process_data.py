@@ -21,6 +21,8 @@ def build_merged_dataset(data: pd.DataFrame) -> pd.DataFrame:
     rename_map = {
         # Q1
         "Primary reason for shunting | Shunt Operation(GOLD)": "Primary reason for shunting",
+        # Q2
+        "EVD insertion in the last 30 days | Shunt Operation(GOLD)": "EVD insertion in the last 30 days",
         # Q4
         "Primary reason for revision | Shunt Operation": "Primary reason for revision",
         # Q8
@@ -68,6 +70,7 @@ def build_merged_dataset(data: pd.DataFrame) -> pd.DataFrame:
     # Gold-standard columns as referenced in questions.py
     gold_cols = [
         "Primary reason for shunting",
+        "EVD insertion in the last 30 days",
         "Primary reason for revision",
         "Choroid plexectomy",
         "Subtemporal decompression",

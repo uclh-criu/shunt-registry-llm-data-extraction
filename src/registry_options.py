@@ -65,6 +65,12 @@ MISCELLANEOUS:
 UNKNOWN
 """
 
+# Define registry options for Q2
+q2_options = """
+- Yes
+- No
+"""
+
 # Define registry options for Q4
 q4_options = """
 - Brain slump
